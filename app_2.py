@@ -122,7 +122,90 @@ coordenadas_imagens = [
     (801, 560)   # 9
 ]
 
+def resolver_captcha(driver):
+    hcaptcha_iframes = WebDriverWait(driver, 10).until(
+        EC.presence_of_all_elements_located((By.XPATH, "//iframe[contains(@title, 'hCaptcha')]"))
+    )
 
+    if hcaptcha_iframes:
+        print("CAPTCHA detectado! Aguarde a resolução.")
+        driver.switch_to.frame(hcaptcha_iframes[0])
+
+        screenshot_path = "captcha_screenshot.png"
+        pyautogui.screenshot(screenshot_path)
+        print(f"Screenshot do CAPTCHA foi salva em: {screenshot_path}")
+
+        captcha_id = enviar_captcha(screenshot_path)
+        if captcha_id:
+            coordenadas = obter_resposta_captcha(captcha_id)
+            if coordenadas:
+                clicar_nas_coordenadas(coordenadas)
+            else:
+                print("Erro ao obter a resposta do CAPTCHA.")
+                return False
+        else:
+            print("Erro ao enviar o CAPTCHA.")
+            return False
+
+        driver.switch_to.default_content()
+    
+    sleep(3)
+    imagem = "proximo.png"
+    try:
+        localizacao = pyautogui.locateCenterOnScreen(imagem, confidence=0.8)
+
+        if localizacao:
+            print(f"Imagem encontrada em: {localizacao}")
+            pyautogui.moveTo(localizacao, duration=0.5)  # Move o mouse suavemente até a imagem
+            pyautogui.click()  # Clica na imagem encontrada
+            return True
+        else:
+            print("Imagem 'proximo.png' não encontrada na tela.")
+            return False
+    except Exception as e:
+        print('Erro imagem proximo',e)
+        return False
+        
+def finalizar_captcha(driver):
+    hcaptcha_iframes = WebDriverWait(driver, 10).until(
+        EC.presence_of_all_elements_located((By.XPATH, "//iframe[contains(@title, 'hCaptcha')]"))
+    )
+
+    if hcaptcha_iframes:
+        print("CAPTCHA detectado! Aguarde a resolução.")
+        driver.switch_to.frame(hcaptcha_iframes[0])
+
+        screenshot_path = "captcha_screenshot.png"
+        pyautogui.screenshot(screenshot_path)
+        print(f"Screenshot do CAPTCHA foi salva em: {screenshot_path}")
+
+        captcha_id = enviar_captcha(screenshot_path)
+        if captcha_id:
+            coordenadas = obter_resposta_captcha(captcha_id)
+            if coordenadas:
+                clicar_nas_coordenadas(coordenadas)
+            else:
+                print("Erro ao obter a resposta do CAPTCHA.")
+                return False
+        else:
+            print("Erro ao enviar o CAPTCHA.")
+            return False
+
+        driver.switch_to.default_content()
+    
+    sleep(3)
+    imagem = "verificar.png"
+    try:
+        localizacao = pyautogui.locateCenterOnScreen(imagem, confidence=0.8)
+
+        if localizacao:
+            print(f"Imagem encontrada em: {localizacao}")
+            pyautogui.moveTo(localizacao, duration=0.5)  # Move o mouse suavemente até a imagem
+            pyautogui.click()  # Clica na imagem encontrada
+        else:
+            print("Imagem 'verificar' não encontrada na tela.")
+    except Exception as e:
+        print('Erro imagem de verificar',e)
 
 def login_det():
     try:
@@ -149,41 +232,23 @@ def login_det():
 
         sleep(5)
 
-        hcaptcha_iframes = WebDriverWait(driver, 10).until(
-            EC.presence_of_all_elements_located((By.XPATH, "//iframe[contains(@title, 'hCaptcha')]"))
-        )
+        captcha_resolvido = resolver_captcha(driver)
+        if not captcha_resolvido:
+            print("Erro na resolução do CAPTCHA. Reiniciando o processo...")
+            driver.quit()
+            login_det()  # Chama novamente a função
+            return  
+        sleep(2)
+        captcha_finalizado = finalizar_captcha(driver)
+        if not captcha_finalizado:
+            print("Erro no segundo CAPTCHA")
+            driver.quit()
+            login_det()  # Chama novamente a função
+            return  
 
-        if hcaptcha_iframes:
-            print("CAPTCHA detectado! Aguarde a resolução.")
-            driver.switch_to.frame(hcaptcha_iframes[0])
 
-            screenshot_path = "captcha_screenshot.png"
-            pyautogui.screenshot(screenshot_path)
-            print(f"Screenshot do CAPTCHA foi salva em: {screenshot_path}")
-
-            captcha_id = enviar_captcha(screenshot_path)
-            if captcha_id:
-                coordenadas = obter_resposta_captcha(captcha_id)
-                if coordenadas:
-                    clicar_nas_coordenadas(coordenadas)
-                else:
-                    print("Erro ao obter a resposta do CAPTCHA.")
-            else:
-                print("Erro ao enviar o CAPTCHA.")
-
-            driver.switch_to.default_content()
         
-        sleep(3)
-        try:
-            botao_proximo = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'button-submit') and contains(@class, 'button') and (contains(text(), 'Próximo') or contains(text(), 'Avançar'))]"))
-            )
-            driver.execute_script("arguments[0].click();", botao_proximo)
-            print("Botão 'Próximo' ou 'Avançar' clicado com sucesso!")
-        except Exception as e:
-            print(f"Erro ao clicar no botão: {e}")
-
-
+        sleep(10)
     
 
     except Exception as e:
